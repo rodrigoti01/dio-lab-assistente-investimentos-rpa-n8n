@@ -143,10 +143,8 @@ Conecte o Agente de IA do N8N a um modelo como Gemini ou GPT para:
 ├── 📄 README.md
 ├── 📁 src/
 │   └── 📄 extrair_clientes.ipynb      # ✅ Notebook Python integrado ao Webhook do N8N
-
 ├── 📁 n8n/
 │   └── 📄 workflow.json               # ✅ Workflow N8N exportado e funcionando
-
 └── 📁 docs/
     ├── 📄 index.html               # ✅ Página de clientes (já implementado)
     └── 📄 data.csv                 # ✅ Opções de investimento (já implementado)
