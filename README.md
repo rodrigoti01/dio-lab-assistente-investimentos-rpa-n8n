@@ -93,13 +93,13 @@ Antes de começar, explore o repositório base que já contém a estrutura inici
 2. Crie uma conta no [N8N Cloud](https://n8n.io/) ou instale localmente
 3. Abra o notebook `src/extrair_clientes.ipynb` no [Google Colab](https://colab.research.google.com/) e execute para entender o fluxo de extração
 
-> 💡 **Atenção:** O script já extrai os dados, mas o envio ao N8N está comentado (`TODO`). Você vai configurar a URL do Webhook após criá-lo na próxima etapa.
+> 💡 **Atenção:** O script já extrai os dados dos clientes e está integrado ao Webhook do N8N. A URL do Webhook foi configurada no notebook e o envio foi testado com sucesso, retornando **Status 200**.
 
 ### Etapa 3: Desenvolva o Workflow no N8N
 
 Este é o coração do desafio! Monte um fluxo que:
 
-1. Receba os dados dos clientes via Webhook (copie a URL gerada e configure no script Python)
+1. Receba os dados dos clientes via Webhook, já integrado ao script Python
 2. Leia o arquivo `docs/data.csv` com as opções de investimento
 3. Cruze o perfil de cada cliente com a opção adequada
 4. Gere uma mensagem de recomendação para cada cliente
@@ -124,10 +124,10 @@ Conecte o Agente de IA do N8N a um modelo como Gemini ou GPT para:
 
 ### MVP (Mínimo Viável)
 
-- [ ] Repositório forkado com o workflow N8N implementado
-- [ ] Workflow N8N exportado (`n8n/workflow.json`) com mensagens estáticas
-- [ ] Script de RPA integrado ao Webhook do N8N
-- [ ] Print ou vídeo demonstrando o fluxo funcionando de ponta a ponta
+* [x] Repositório forkado com o workflow N8N implementado
+* [x] Workflow N8N exportado (`n8n/workflow.json`) com mensagens estáticas
+* [x] Script de RPA integrado ao Webhook do N8N
+* [x] Fluxo testado de ponta a ponta, com envio dos clientes pelo Python e processamento no N8N
 
 ### Desafio Completo
 
@@ -142,9 +142,11 @@ Conecte o Agente de IA do N8N a um modelo como Gemini ou GPT para:
 📁 dio-lab-assistente-investimentos-rpa-n8n/
 ├── 📄 README.md
 ├── 📁 src/
-│   └── 📄 extrair_clientes.ipynb   # ✅ Notebook Python (já implementado, falta só o TODO)
+│   └── 📄 extrair_clientes.ipynb      # ✅ Notebook Python integrado ao Webhook do N8N
+
 ├── 📁 n8n/
-│   └── 📄 workflow.json            # 🎯 Seu desafio: exportar o workflow aqui
+│   └── 📄 workflow.json               # ✅ Workflow N8N exportado e funcionando
+
 └── 📁 docs/
     ├── 📄 index.html               # ✅ Página de clientes (já implementado)
     └── 📄 data.csv                 # ✅ Opções de investimento (já implementado)
