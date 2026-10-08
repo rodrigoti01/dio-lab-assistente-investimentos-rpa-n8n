@@ -170,3 +170,41 @@ Conecte o Agente de IA do N8N a um modelo como Gemini ou GPT para:
 **Bons estudos e mãos à obra** 🚀
 
 Se tiver dúvidas, lembre-se: a melhor forma de aprender é experimentando. Erre, corrija e celebre cada pequena vitória no caminho.
+
+## Documentação Técnica — Decisões do Projeto
+
+### 1. Extração de dados com Python (RPA)
+
+O notebook `src/extrair_clientes.ipynb` utiliza Python, Requests e BeautifulSoup para acessar a página de clientes hospedada no GitHub Pages, extrair nome, e-mail, saldo e perfil de investidor e enviar os dados ao webhook do n8n por meio de uma requisição HTTP POST com JSON.
+
+### 2. Recebimento e processamento no n8n
+
+O workflow recebe os dados pelo Webhook, consulta a base de investimentos disponibilizada em CSV e cruza as informações dos clientes com as opções compatíveis com cada perfil e saldo. O processamento é feito com nós de código JavaScript.
+
+### 3. Geração de mensagens com IA generativa
+
+O workflow utiliza o nó Message a Model com o modelo Gemini para gerar mensagens personalizadas de acordo com os dados e o perfil de cada cliente. Em seguida, o fluxo organiza as mensagens, valida os endereços de e-mail e utiliza o Gmail para processar os envios.
+
+### 4. Testes realizados
+
+O notebook foi executado com 10 clientes fictícios. O envio dos dados ao webhook de produção retornou status HTTP 200, e a execução do workflow apresentou registros de envio processados pelo Gmail.
+
+### 5. Decisões técnicas e limitações
+
+* Python e BeautifulSoup foram utilizados para automatizar a extração de dados da página web.
+* O webhook permite integrar o notebook Python ao n8n.
+* O CSV mantém as opções de investimento separadas do código do workflow.
+* O Gemini permite gerar mensagens dinâmicas em vez de depender exclusivamente de textos fixos.
+* Os dados dos clientes são fictícios e os endereços de e-mail utilizados são exemplos. O registro de envio do Gmail não comprova que uma mensagem foi recebida ou lida pelo destinatário.
+* As mensagens geradas são demonstrativas e não substituem uma avaliação financeira individualizada.
+
+### 6. Como executar o projeto
+
+1. Abra `src/extrair_clientes.ipynb` no Google Colab.
+2. Confira se o webhook configurado no notebook corresponde ao endereço de produção acessível do n8n.
+3. Verifique se o workflow está publicado e se as credenciais necessárias estão configuradas.
+4. Execute o notebook para extrair e enviar os clientes.
+5. Consulte as execuções do n8n para verificar o processamento.
+
+**Observação:** não publique tokens, senhas ou credenciais pessoais no repositório.
+
