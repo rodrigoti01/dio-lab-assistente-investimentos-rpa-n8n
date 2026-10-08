@@ -1,34 +1,21 @@
 {
-  "name": "My workflow 16",
+  "name": "My workflow 17",
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "clientes",
-        "options": {}
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200
+        }
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        0,
-        0
+        2416,
+        -336
       ],
-      "id": "567208b9-bc1a-4354-8e49-f5ba7e657338",
-      "name": "Webhook",
-      "webhookId": "46d87a4e-1040-40dc-854e-15ec94fe13ce"
-    },
-    {
-      "parameters": {
-        "jsCode": "const clientes = $json.body.clientes;\n\nreturn clientes.map(cliente => ({\n  json: cliente\n}));"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        192,
-        -112
-      ],
-      "id": "24da4d73-0664-4844-a15b-60f5b824fd79",
-      "name": "Code in JavaScript"
+      "id": "b078474b-2b8e-47d6-923b-0a067d459327",
+      "name": "Respond to Webhook"
     },
     {
       "parameters": {
@@ -38,62 +25,199 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        224,
-        80
+        144,
+        0
       ],
-      "id": "083d92f4-54b2-43c4-bd46-629c050dd1e0",
+      "id": "534c29f0-595f-4df4-8a22-2fc33b9c1675",
       "name": "HTTP Request"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// Pega o CSV como texto vindo do HTTP Request\nconst csvRaw = $json.data ?? $json.body ?? $json;\nconst text = (typeof csvRaw === \"string\") ? csvRaw : JSON.stringify(csvRaw);\n\nconst lines = text.split(/\\r?\\n/).map(l => l.trim()).filter(Boolean);\nconst headers = lines[0].split(\",\").map(h => h.trim());\n\nconst investimentos = lines.slice(1).map(line => {\n  const cols = line.split(\",\").map(c => c.trim());\n  const obj = {};\n  headers.forEach((h, i) => obj[h] = cols[i] ?? \"\");\n  \n  // normaliza mínimo para número\n  obj.minimo = Number(String(obj.minimo).replace(/[^\\d]/g, \"\")) || 0;\n  \n  return obj;\n});\n\nreturn [{ json: { investimentos } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        0
+      ],
+      "id": "bd744aa0-36b3-410c-9a87-2040c6e2eb18",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        528,
-        16
+        592,
+        -160
       ],
-      "id": "f8638f3f-1d00-4da3-a14d-9cfa2eccd15c",
+      "id": "bc31bf90-ecbd-421e-bbdb-14f2c4989a3d",
       "name": "Merge"
     },
     {
       "parameters": {
-        "jsCode": "const itens = $input.all();\n\nconst clientes = itens.filter(item => item.json.nome);\nconst csvItem = itens.find(item => item.json.data);\n\nconst linhas = csvItem.json.data.trim().split(\"\\n\");\n\nconst investimentos = linhas.slice(1).map(linha => {\n  const [perfil, produto, minimo, rentabilidade] = linha.split(\",\");\n\n  return {\n    perfil,\n    produto,\n    minimo: Number(minimo),\n    rentabilidade\n  };\n});\n\nreturn clientes.map(item => {\n  const cliente = item.json;\n\n  const saldo = Number(\n    cliente.saldo\n      .replace(\"R$\", \"\")\n      .replace(/\\./g, \"\")\n      .replace(\",\", \".\")\n      .trim()\n  );\n\n  const opcoes = investimentos.filter(\n    investimento =>\n      investimento.perfil === cliente.perfil &&\n      investimento.minimo <= saldo\n  );\n\n  const investimento = opcoes[0];\n\n  return {\n    json: {\n      ...cliente,\n      saldoNumerico: saldo,\n      produto: investimento ? investimento.produto : \"Nenhuma opção disponível\",\n      minimo: investimento ? investimento.minimo : null,\n      rentabilidade: investimento ? investimento.rentabilidade : null\n    }\n  };\n});"
+        "jsCode": "const item = $input.first().json;\nconst clientes = item.body.clientes;\n\n// Lista de produtos de investimento por perfil\nconst investimentos = [\n  { perfil: \"Conservador\", produto: \"CDB Liquidez Diária\",   minimo: 1000, rentabilidade: 12.5 },\n  { perfil: \"Conservador\", produto: \"Tesouro Selic\",          minimo: 100,  rentabilidade: 11.8 },\n  { perfil: \"Conservador\", produto: \"LCI/LCA\",                minimo: 5000, rentabilidade: 13.0 },\n  { perfil: \"Moderado\",    produto: \"Fundos Multimercado\",    minimo: 1000, rentabilidade: 15.0 },\n  { perfil: \"Moderado\",    produto: \"Debêntures\",             minimo: 1000, rentabilidade: 14.5 },\n  { perfil: \"Moderado\",    produto: \"FIIs\",                   minimo: 500,  rentabilidade: 13.8 },\n  { perfil: \"Arrojado\",    produto: \"Ações na Bolsa\",         minimo: 500,  rentabilidade: 20.0 },\n  { perfil: \"Arrojado\",    produto: \"ETFs\",                   minimo: 100,  rentabilidade: 18.5 },\n  { perfil: \"Arrojado\",    produto: \"Criptomoedas\",           minimo: 50,   rentabilidade: 30.0 },\n];\n\n// Função para escolher mensagem aleatória\nfunction pick(arr) {\n  return arr[Math.floor(Math.random() * arr.length)];\n}\n\nconst resultados = clientes.map(cliente => {\n  const saldoNum = parseFloat(\n    cliente.saldo.replace(\"R$\", \"\").replace(/\\./g, \"\").replace(\",\", \".\").trim()\n  );\n\n  // Pega o primeiro produto compatível com o perfil\n  const inv = investimentos.find(i => i.perfil === cliente.perfil) || {\n    produto: \"Consultar assessor\", minimo: 0, rentabilidade: 0\n  };\n\n  const motivo = saldoNum >= inv.minimo ? \"saldo_ok\" : \"saldo_insuficiente\";\n\n  const mensagens = [\n    `Olá ${cliente.nome}! Pelo seu perfil (${cliente.perfil}), uma boa opção é **${inv.produto}** (mínimo R$ ${inv.minimo.toLocaleString('pt-BR')},00). Com seu saldo atual (R$ ${saldoNum.toLocaleString('pt-BR')},00), você já consegue investir. Rentabilidade: ${inv.rentabilidade}%.`,\n    `Oi ${cliente.nome}! Recomendação para perfil ${cliente.perfil}: **${inv.produto}** (mínimo R$ ${inv.minimo.toLocaleString('pt-BR')},00). Seu saldo (R$ ${saldoNum.toLocaleString('pt-BR')},00) já atende o mínimo. Rentabilidade: ${inv.rentabilidade}%.`,\n    `${cliente.nome}, indo direto ao ponto: para o perfil ${cliente.perfil}, **${inv.produto}** (mínimo R$ ${inv.minimo.toLocaleString('pt-BR')},00). Você tem R$ ${saldoNum.toLocaleString('pt-BR')},00, então dá pra aplicar. Rentabilidade: ${inv.rentabilidade}%.`\n  ];\n\n  return {\n    nome: cliente.nome,\n    email: cliente.email,\n    perfil: cliente.perfil,\n    saldo_texto: cliente.saldo,\n    saldo_num: saldoNum,\n    recomendacao: {\n      perfil: cliente.perfil,\n      produto: inv.produto,\n      minimo: inv.minimo,\n      rentabilidade: `${inv.rentabilidade}%`\n    },\n    motivo: motivo,\n    mensagens: mensagens,\n    mensagem_escolhida: pick(mensagens)\n  };\n});\n\nreturn [{\n  json: {\n    ok: true,\n    total_clientes: resultados.length,\n    total_investimentos: investimentos.length,\n    resultados: resultados\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        752,
-        16
+        816,
+        -160
       ],
-      "id": "6063cf41-089d-4e66-9396-e3bb11ec9dc4",
+      "id": "4c0150f1-c001-4ffa-a1ed-2dec09bdb131",
       "name": "Code in JavaScript1"
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(item => {\n  const cliente = item.json;\n\n  let mensagem;\n\n  if (cliente.perfil === \"Conservador\") {\n    mensagem = `Olá, ${cliente.nome}! Com base no seu perfil Conservador, recomendamos ${cliente.produto}, uma opção focada em segurança e estabilidade.`;\n  } \n  else if (cliente.perfil === \"Moderado\") {\n    mensagem = `Olá, ${cliente.nome}! Com base no seu perfil Moderado, recomendamos ${cliente.produto}, buscando um equilíbrio entre segurança e potencial de rentabilidade.`;\n  } \n  else if (cliente.perfil === \"Arrojado\") {\n    mensagem = `Olá, ${cliente.nome}! Com base no seu perfil Arrojado, recomendamos ${cliente.produto}, uma opção com maior potencial de retorno e também maior exposição a riscos.`;\n  } \n  else {\n    mensagem = `Olá, ${cliente.nome}! Não encontramos uma recomendação adequada para o seu perfil.`;\n  }\n\n  return {\n    json: {\n      ...cliente,\n      mensagem\n    }\n  };\n});"
+        "jsCode": "const resultados = $json.resultados || [];\n\nfunction parseBRL(valor) {\n  if (!valor) return 0;\n  const s = String(valor)\n    .replace(\"R$\", \"\")\n    .replace(/\\./g, \"\")\n    .replace(\",\", \".\")\n    .replace(/[^\\d.]/g, \"\")\n    .trim();\n  const n = Number(s);\n  return Number.isFinite(n) ? n : 0;\n}\n\n// retorna UM ITEM por cliente\nconst out = resultados.map(c => {\n  const saldoNum = c.saldo_num ?? parseBRL(c.saldo_texto ?? c.saldo);\n  return {\n    json: {\n      ...c,\n      saldo_num: saldoNum,\n    }\n  };\n});\n\nreturn out;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        976,
-        16
+        1040,
+        -160
       ],
-      "id": "096b2eab-2ad4-43ef-93b8-8df86ba032c7",
+      "id": "0bfd56f1-7425-4448-85fc-0afc10c62d82",
       "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Gere uma mensagem personalizada de recomendação de investimento.\n\nNome: {{ $json.nome }}\nPerfil: {{ $json.perfil }}\nSaldo: {{ $json.saldo_texto }}\nProduto recomendado: {{ $json.recomendacao.produto }}\nValor mínimo: {{ $json.recomendacao.minimo }}\nRentabilidade: {{ $json.recomendacao.rentabilidade }}\n\nUse somente esses dados.\nNão invente outros dados.\nRetorne somente a mensagem para o cliente."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -336
+      ],
+      "id": "09f9f9e7-676f-4c38-9d1f-da8977a69e58",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JDc2zrDi9rsdFD2O",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const respostas = $input.all();\nconst clientes = $('Code in JavaScript2').all();\n\nreturn respostas.map((item, index) => {\n  const cliente = clientes[index]?.json ?? {};\n\n  const texto =\n    item.json.content?.parts\n      ?.find(part => part.text)\n      ?.text ?? '';\n\n  return {\n    json: {\n      to: cliente.email ?? '',\n      subject: `Recomendação de investimento - ${cliente.nome ?? 'Cliente'}`,\n      textBody: texto,\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -336
+      ],
+      "id": "5de6fa54-d5ec-4773-9d1a-9b66e00f5b3b",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.textBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        -336
+      ],
+      "id": "25ea7ed3-add3-48c1-820b-7f0f60aba45b",
+      "name": "Send a message",
+      "webhookId": "e29e1b21-dc3b-487e-bc0c-96b96e71b840",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zS7Fa518v5hb8Ngq",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aae91787-f670-449e-aef4-5a62ae23f3e8",
+              "leftValue": "={{ $json.to }}",
+              "rightValue": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1856,
+        -336
+      ],
+      "id": "a0d05020-2656-4dbf-87dc-1acd3457408f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clientes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "f6adbc32-aab8-4f43-a680-7c07428a54e8",
+      "name": "Webhook",
+      "webhookId": "798a8b35-7af2-4dbd-945c-d58a62f6b44a"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
       "main": [
         [
           {
             "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "HTTP Request",
             "type": "main",
             "index": 0
           }
@@ -101,17 +225,6 @@
       ]
     },
     "Code in JavaScript": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
       "main": [
         [
           {
@@ -143,19 +256,90 @@
           }
         ]
       ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "42cdf014-d8e4-4be4-89a7-99da2fd7f31a",
+  "versionId": "212208c1-06e8-4c18-a663-757c01468333",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6cda4ab33934954cbf988fc587976f4147728a4430f2db69432b833648fd8f3a"
   },
   "nodeGroups": [],
-  "id": "FibE3MYYtetvHZKd",
+  "id": "Tms3ZIu4Czs5P0eN",
   "tags": []
 }
